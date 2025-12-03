@@ -1,0 +1,27 @@
+# Unreal Engine GitIgnore
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+*.opensdf
+*.VC.db
+*.sdf
+*.sln
+*.suo
+*.xcodeproj
+*.vs/
+.vscode/
+*.log
+*.tmp
+*.db
+*.db-shm
+*.db-wal
+*.pdb
+*.exe
+*.dll
+*.dylib
+*.app
+
+# Ignore additional folders
+Plugins/*/Intermediate/
+Plugins/*/Binaries/

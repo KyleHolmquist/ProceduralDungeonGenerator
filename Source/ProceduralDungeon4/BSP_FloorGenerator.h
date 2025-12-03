@@ -1,0 +1,92 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/Actor.h"
+#include "BSP_FloorGenerator.generated.h"
+
+USTRUCT(BlueprintType)
+struct FBSPLeaf
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FIntPoint Min;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FIntPoint Max;
+
+	FBSPLeaf()
+		: Min(FIntPoint::ZeroValue)
+		, Max(FIntPoint::ZeroValue)
+		{}
+
+	FBSPLeaf(FIntPoint InMin, FIntPoint InMax)
+	: Min(InMin), Max(InMax)
+	{}
+
+	int32 Width() const { return Max.X - Min.X; }
+	int32 Height() const { return Max.Y - Min.Y; }
+};
+
+UCLASS()
+class PROCEDURALDUNGEON4_API ABSP_FloorGenerator : public AActor
+{
+	GENERATED_BODY()
+	
+public:	
+	// Sets default values for this actor's properties
+	ABSP_FloorGenerator();
+
+protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+
+	//Size of the whole map in grid cells
+	UPROPERTY(EditAnywhere, Category = "BSP")
+	FIntPoint MapSize = FIntPoint(40, 40);
+
+	//Minimum leaf size in cells
+	UPROPERTY(EditAnywhere, Category = "BSP")
+	int32 MinLeafSize = 8;
+
+	//Max recursion depth
+	UPROPERTY(EditAnywhere, Category = "BSP")
+	int32 MaxDepth = 5;
+
+	//Size of one grid cell in world units (cm)
+	UPROPERTY(EditAnywhere, Category = "BSP")
+	float TileSize = 100.f;
+
+	//Plane mesh to use for each room floor
+	UPROPERTY(EditAnywhere, Category = "BSP")
+	UStaticMesh* FloorMesh;
+
+	//Z Offset for the floor
+	UPROPERTY(EditAnywhere, Category = "BSP")
+	float FloorZ = 0.f;
+
+	// How much to shrink rooms inside each leaf (in grid cells)
+	UPROPERTY(EditAnywhere, Category = "BSP|Rooms")
+	int32 RoomPaddingMin = 1;
+
+	UPROPERTY(EditAnywhere, Category = "BSP|Rooms")
+	int32 RoomPaddingMax = 3;
+
+private:
+	//All leaf regions after BSP split
+	
+	UPROPERTY()
+	TArray<FBSPLeaf> LeafRegions;
+
+	void GenerateBSP();
+	void SplitSpace(const FBSPLeaf& Region, int32 Depth);
+
+	void SpawnFloorPlanes();
+
+public:	
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+
+};
