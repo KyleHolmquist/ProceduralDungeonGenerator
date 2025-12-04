@@ -26,6 +26,12 @@ void ACA_FloorGenerator::BeginPlay()
 	
 }
 
+void ACA_FloorGenerator::Tick(float DeltaTime)
+{
+    Super::Tick(DeltaTime);
+    // No per-frame logic needed for now
+}
+
 void ACA_FloorGenerator::InitializeMap()
 {
 	const int32 NumCells = MapWidth * MapHeight;
