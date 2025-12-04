@@ -59,7 +59,7 @@ void AWalk_FloorGenerator::InitializeMap()
 
 void AWalk_FloorGenerator::RunRandomWalk()
 {
-	if (MapWidth <= 2 || MApHeight <= 2) return;
+	if (MapWidth <= 2 || MapHeight <= 2) return;
 
 	int32 X, Y;
 
@@ -110,5 +110,69 @@ void AWalk_FloorGenerator::RunRandomWalk()
 
 void AWalk_FloorGenerator::SpawnGeometry()
 {
-	
+	UWorld* World = GetWorld();
+	if(!World) return;
+
+	if (!FloorMesh && !WallMesh)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Walk_FloorGenerator: no meshes assigned"));
+		return;
+	}
+
+	const float BasePlaneSize = 100.f;
+
+	for (int32 y = 0; y < MapHeight; ++y)
+	{
+		for (int32 x = 0; x < MapWidth; ++x)
+		{
+			const bool bIsWall = Map[Index(x, y)];
+
+			const FVector CellWorld = GetActorLocation() + FVector(x * TileSize, y * TileSize, 0.f);
+
+			//Floor
+			if (!bIsWall && FloorMesh)
+			{
+				const FVector Pos = CellWorld + FVector(0.f, 0.f, FloorZ);
+
+				AStaticMeshActor* FloorActor = World->SpawnActor<AStaticMeshActor>(Pos, FRotator::ZeroRotator);
+				if (!FloorActor) continue;
+
+				UStaticMeshComponent* MeshComp = FloorActor->GetStaticMeshComponent();
+				if(!MeshComp)
+				{
+					FloorActor->Destroy();
+					continue;
+				}
+
+				MeshComp->SetStaticMesh(FloorMesh);
+
+				const float Scale = TileSize / BasePlaneSize;
+				FloorActor->SetActorScale3D(FVector(Scale, Scale, 1.f));
+				FloorActor->SetMobility(EComponentMobility::Static);
+			}
+			//Walls
+			else if (bIsWall && WallMesh)
+			{
+				const FVector Pos = CellWorld + FVector(0.f, 0.f, FloorZ + WallHeight * 0.f);
+
+				AStaticMeshActor* WallActor = World->SpawnActor<AStaticMeshActor>(Pos, FRotator::ZeroRotator);
+				if (!WallActor) continue;
+
+				UStaticMeshComponent* MeshComp = WallActor->GetStaticMeshComponent();
+				if (!MeshComp)
+				{
+					WallActor->Destroy();
+					continue;
+				}
+
+				MeshComp->SetStaticMesh(WallMesh);
+
+				const float XYScale = TileSize / BasePlaneSize;
+				const float ZScale = WallHeight / BasePlaneSize;
+				WallActor->SetActorScale3D(FVector(XYScale, XYScale, ZScale));
+				WallActor->SetMobility(EComponentMobility::Static);
+			}
+		}
+	}
+
 }
