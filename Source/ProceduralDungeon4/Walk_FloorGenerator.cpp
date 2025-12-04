@@ -153,6 +153,8 @@ void AWalk_FloorGenerator::SpawnGeometry()
 			//Walls
 			else if (bIsWall && WallMesh)
 			{
+				if(!HasFloorNeighbor(x, y)) continue;
+
 				const FVector Pos = CellWorld + FVector(0.f, 0.f, FloorZ + WallHeight * 0.f);
 
 				AStaticMeshActor* WallActor = World->SpawnActor<AStaticMeshActor>(Pos, FRotator::ZeroRotator);
@@ -175,4 +177,30 @@ void AWalk_FloorGenerator::SpawnGeometry()
 		}
 	}
 
+}
+
+bool AWalk_FloorGenerator::HasFloorNeighbor(int32 X, int32 Y) const
+{
+	//4-connected neighbors NSWE
+	const int32 DX[4] = {1, -1, 0, 0};
+	const int32 DY[4] = {0, 0, 1, -1};
+
+	for (int32 i = 0; i < 4; ++i)
+	{
+		int32 NX = X + DX[i];
+		int32 NY = Y + DY[i];
+
+		if (NX < 0 || NY < 0 || NX >= MapWidth || NY >= MapHeight)
+		{
+			continue;
+		}
+
+		//false = floor
+		if (!Map[Index(NX, NY)])
+		{
+			return true;
+		}
+	}
+
+	return false;
 }

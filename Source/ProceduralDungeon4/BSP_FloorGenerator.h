@@ -74,6 +74,21 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "BSP|Rooms")
 	int32 RoomPaddingMax = 3;
 
+	// ---- Walls ----
+
+	//Mesh used for walls
+	UPROPERTY(EditAnywhere, Category = "BSP|Walls")
+	UStaticMesh* WallMesh;
+	
+	//Height of walls
+	UPROPERTY(EditAnywhere, Category = "BSP|Walls")
+	float WallHeight = 300.f;
+
+	//Thickness of the walls
+	UPROPERTY(EditAnywhere, Category = "BSP|Walls")
+	float WallThickness = 50.f;
+
+
 private:
 	//All leaf regions after BSP split
 	

@@ -184,7 +184,7 @@ void ACA_FloorGenerator::SpawnGeometry()
 			//Spawn wall mesh where there's a wall
 			if (bIsWall && WallMesh)
 			{
-				const FVector WallPos = GetActorLocation() + FVector(x * TileSize, y * TileSize, FloorZ + WallHeight * 0.5f);
+				const FVector WallPos = GetActorLocation() + FVector(x * TileSize, y * TileSize, FloorZ);
 
 				AStaticMeshActor* WallActor = World->SpawnActor<AStaticMeshActor>(WallPos, FRotator::ZeroRotator);
 				if (!WallActor) continue;

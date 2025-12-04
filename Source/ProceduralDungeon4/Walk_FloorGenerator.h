@@ -71,4 +71,6 @@ private:
 	void RunRandomWalk();
 	void SpawnGeometry();
 
+	bool HasFloorNeighbor(int32 X, int32 Y) const;
+
 };

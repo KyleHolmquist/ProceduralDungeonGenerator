@@ -140,8 +140,8 @@ void ABSP_FloorGenerator::SpawnFloorPlanes()
 		return;
 	}
 
-	//Assume the plane mesh is 100x100 units. Adjust if need be
-	const float BasePlaneSize = 100.f;
+	//Assume the plane and cube meshes are 100x100 units. Adjust if need be
+	const float BaseMeshSize = 100.f;
 
 	for (const FBSPLeaf& Leaf : LeafRegions)
 	{
@@ -181,8 +181,8 @@ void ABSP_FloorGenerator::SpawnFloorPlanes()
 			continue;
 		}
 
-		const float WorldWidth = LeafW * TileSize;
-		const float WorldHeight = LeafH * TileSize;
+		const float WorldWidth = RoomW * TileSize;
+		const float WorldHeight = RoomH * TileSize;
 
 		//Center of this room in world space
 		const FVector RoomCenter(
@@ -194,25 +194,91 @@ void ABSP_FloorGenerator::SpawnFloorPlanes()
 		const FVector WorldLocation = GetActorLocation() + RoomCenter;
 
 		//Scale so that a 100x100 plane becomes WorldWidth x WorldHeight
-		const FVector Scale(
-			WorldWidth / BasePlaneSize,
-			WorldHeight / BasePlaneSize,
+		const FVector FloorScale(
+			WorldWidth / BaseMeshSize,
+			WorldHeight / BaseMeshSize,
 			1.f
 		);
+
+		//---- Floor ---- 
 
 		AStaticMeshActor* FloorActor = World->SpawnActor<AStaticMeshActor>(WorldLocation, FRotator::ZeroRotator);
 		if (!FloorActor) continue;
 
-		UStaticMeshComponent* MeshComp = FloorActor->GetStaticMeshComponent();
-		if (!MeshComp)
+		if (UStaticMeshComponent* MeshComp = FloorActor->GetStaticMeshComponent())
+		{
+			MeshComp->SetStaticMesh(FloorMesh);
+			FloorActor->SetActorScale3D(FloorScale);
+			FloorActor->SetMobility(EComponentMobility::Static);
+		}
+		else
 		{
 			FloorActor->Destroy();
 			continue;
 		}
 
-		MeshComp->SetStaticMesh(FloorMesh);
-		FloorActor->SetActorScale3D(Scale);
-		FloorActor->SetMobility(EComponentMobility::Static);
+		//---- Walls ----
+
+		if (WallMesh)
+		{
+			const float RoomWorldWidth = WorldWidth;
+			const float RoomWorldHeight = WorldHeight;
+
+			//Bottom wall
+			{
+				const FVector WallCenter(
+					(RoomMinX + RoomW * 0.5f) * TileSize,
+					RoomMinY * TileSize,
+					FloorZ + WallHeight * 0.5f
+				);
+
+				AStaticMeshActor* Wall = World->SpawnActor<AStaticMeshActor>(GetActorLocation() + WallCenter, FRotator::ZeroRotator);
+				if (Wall)
+				{
+					if (UStaticMeshComponent* WComp = Wall->GetStaticMeshComponent())
+					{
+						WComp->SetStaticMesh(WallMesh);
+						const float ScaleX = WallThickness / BaseMeshSize;
+						const float ScaleY = RoomWorldHeight / BaseMeshSize;
+						const float ScaleZ = WallHeight / BaseMeshSize;
+						Wall->SetActorScale3D(FVector(ScaleX, ScaleY, ScaleZ));
+						Wall->SetMobility(EComponentMobility::Static);
+					}
+					else
+					{
+						Wall->Destroy();
+					}
+				}
+			}
+
+			//Right Wall
+			{
+				const FVector WallCenter(
+					RoomMaxX * TileSize,
+					(RoomMinY + RoomH * 0.5f) * TileSize,
+					FloorZ + WallHeight * 0.5f
+				);
+
+				AStaticMeshActor* Wall = World->SpawnActor<AStaticMeshActor>(GetActorLocation() + WallCenter, FRotator::ZeroRotator);
+				if (Wall)
+				{
+					if (UStaticMeshComponent* WComp = Wall->GetStaticMeshComponent())
+					{
+						WComp->SetStaticMesh(WallMesh);
+						const float ScaleX = WallThickness / BaseMeshSize;
+						const float ScaleY = RoomWorldHeight / BaseMeshSize;
+						const float ScaleZ = WallHeight / BaseMeshSize;
+						Wall->SetActorScale3D(FVector(ScaleX, ScaleY, ScaleZ));
+						Wall->SetMobility(EComponentMobility::Static);
+					}
+					else
+					{
+						Wall->Destroy();
+					}
+				}
+			}
+		}
+
 	}
 }
 
