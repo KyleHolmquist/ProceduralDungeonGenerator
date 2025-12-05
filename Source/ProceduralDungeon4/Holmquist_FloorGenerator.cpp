@@ -130,7 +130,7 @@ void AHolmquist_FloorGenerator::SpawnFloorTiles()
 	if (!World) return;
 
 	const float BaseSize = 100.f;
-	const float HalfTile = TileSize * 0.3f;
+	const float HalfTile = TileSize * 0.5f;
 
 	//---- Floors and Edge Walls ----
 
@@ -163,26 +163,30 @@ void AHolmquist_FloorGenerator::SpawnFloorTiles()
 			}
 
 			//---- Walls around Floor ----
-			if (!bIsFloor || !WallMesh) continue;
-
-			//+X (east) neighbor. spawn a vertical wall segment if that side is empty or OOB
+			if (!bIsFloor || !WallMesh)
 			{
-				bool bHasEastFloor = false;
+				continue;
+			}
 
-				if (x + 1 < GridWidth)
+			// Helper lambda to ask "is there floor at (NX, NY)?"
+			auto HasFloorAt = [&](int32 NX, int32 NY) -> bool
+			{
+				if (NX < 0 || NX >= GridWidth || NY < 0 || NY >= GridHeight)
 				{
-					bHasEastFloor = Grid[Index(x + 1, y)];
+					return false;
 				}
+				return Grid[Index(NX, NY)];
+			};
 
+			// EAST (+X) edge  → vertical wall (length along Y)
+			{
+				const bool bHasEastFloor = HasFloorAt(x + 1, y);
 				if (!bHasEastFloor)
 				{
 					const FVector WallPos = TileCenter + FVector(HalfTile, 0.f, FloorZ + WallHeight * 0.f);
-
-					//Rotate so mesh's X axis runs along world Y
 					const FRotator Rot(0.f, 90.f, 0.f);
 
 					AStaticMeshActor* WallActor = World->SpawnActor<AStaticMeshActor>(WallPos, Rot);
-
 					if (WallActor)
 					{
 						UStaticMeshComponent* WComp = WallActor->GetStaticMeshComponent();
@@ -194,55 +198,109 @@ void AHolmquist_FloorGenerator::SpawnFloorTiles()
 						{
 							WComp->SetStaticMesh(WallMesh);
 
-							const float ScaleX = TileSize / BaseSize;
-							const float ScaleY = WallThickness / BaseSize;
-							const float ScaleZ = WallHeight / BaseSize;
+							const float ScaleX = TileSize      / BaseSize; // length
+							const float ScaleY = WallThickness / BaseSize; // thickness
+							const float ScaleZ = WallHeight    / BaseSize; // height
 
 							WallActor->SetActorScale3D(FVector(ScaleX, ScaleY, ScaleZ));
 							WallActor->SetMobility(EComponentMobility::Static);
 						}
 					}
 				}
-			}
 
-			//+y (north) neighbor. Soawn a horizontal wall segment if that side is empty or OOB
-			{
-				bool bHasNorthFloor = false;
-
-				if (y + 1 < GridHeight)
+				// WEST (-X) edge → vertical wall
 				{
-					bHasNorthFloor = Grid[Index(x, y + 1)];
-				}
-
-				if (!bHasNorthFloor)
-				{
-					const FVector WallPos = TileCenter + FVector(0.f, HalfTile, FloorZ + WallHeight * 0.f);
-
-					const FRotator Rot(0.f, 0.f, 0.f);
-
-					AStaticMeshActor* WallActor = World->SpawnActor<AStaticMeshActor>(WallPos, Rot);
-
-					if (WallActor)
+					const bool bHasWestFloor = HasFloorAt(x - 1, y);
+					if (!bHasWestFloor)
 					{
-						UStaticMeshComponent* WComp = WallActor->GetStaticMeshComponent();
-						if (!WComp)
-						{
-							WallActor->Destroy();
-						}
-						else
-						{
-							WComp->SetStaticMesh(WallMesh);
-							const float ScaleX = TileSize / BaseSize;
-							const float ScaleY = WallThickness / BaseSize;
-							const float ScaleZ = WallHeight / BaseSize;
+						const FVector WallPos = TileCenter + FVector(-HalfTile, 0.f, FloorZ + WallHeight * 0.f);
+						const FRotator Rot(0.f, 90.f, 0.f);
 
-							WallActor->SetActorScale3D(FVector(ScaleX, ScaleY, ScaleZ));
-							WallActor->SetMobility(EComponentMobility::Static);
+						AStaticMeshActor* WallActor = World->SpawnActor<AStaticMeshActor>(WallPos, Rot);
+						if (WallActor)
+						{
+							UStaticMeshComponent* WComp = WallActor->GetStaticMeshComponent();
+							if (!WComp)
+							{
+								WallActor->Destroy();
+							}
+							else
+							{
+								WComp->SetStaticMesh(WallMesh);
+
+								const float ScaleX = TileSize      / BaseSize;
+								const float ScaleY = WallThickness / BaseSize;
+								const float ScaleZ = WallHeight    / BaseSize;
+
+								WallActor->SetActorScale3D(FVector(ScaleX, ScaleY, ScaleZ));
+								WallActor->SetMobility(EComponentMobility::Static);
+							}
+						}
+					}
+				}
+
+				// NORTH (+Y) edge → horizontal wall (length along X)
+				{
+					const bool bHasNorthFloor = HasFloorAt(x, y + 1);
+					if (!bHasNorthFloor)
+					{
+						const FVector WallPos = TileCenter + FVector(0.f, HalfTile, FloorZ + WallHeight * 0.f);
+						const FRotator Rot(0.f, 0.f, 0.f);
+
+						AStaticMeshActor* WallActor = World->SpawnActor<AStaticMeshActor>(WallPos, Rot);
+						if (WallActor)
+						{
+							UStaticMeshComponent* WComp = WallActor->GetStaticMeshComponent();
+							if (!WComp)
+							{
+								WallActor->Destroy();
+							}
+							else
+							{
+								WComp->SetStaticMesh(WallMesh);
+
+								const float ScaleX = TileSize      / BaseSize;
+								const float ScaleY = WallThickness / BaseSize;
+								const float ScaleZ = WallHeight    / BaseSize;
+
+								WallActor->SetActorScale3D(FVector(ScaleX, ScaleY, ScaleZ));
+								WallActor->SetMobility(EComponentMobility::Static);
+							}
+						}
+					}
+				}
+
+				// SOUTH (-Y) edge → horizontal wall
+				{
+					const bool bHasSouthFloor = HasFloorAt(x, y - 1);
+					if (!bHasSouthFloor)
+					{
+						const FVector WallPos = TileCenter + FVector(0.f, -HalfTile, FloorZ + WallHeight * 0.f);
+						const FRotator Rot(0.f, 0.f, 0.f);
+
+						AStaticMeshActor* WallActor = World->SpawnActor<AStaticMeshActor>(WallPos, Rot);
+						if (WallActor)
+						{
+							UStaticMeshComponent* WComp = WallActor->GetStaticMeshComponent();
+							if (!WComp)
+							{
+								WallActor->Destroy();
+							}
+							else
+							{
+								WComp->SetStaticMesh(WallMesh);
+
+								const float ScaleX = TileSize      / BaseSize;
+								const float ScaleY = WallThickness / BaseSize;
+								const float ScaleZ = WallHeight    / BaseSize;
+
+								WallActor->SetActorScale3D(FVector(ScaleX, ScaleY, ScaleZ));
+								WallActor->SetMobility(EComponentMobility::Static);
+							}
 						}
 					}
 				}
 			}
-
 		}
 	}
 
@@ -268,7 +326,7 @@ void AHolmquist_FloorGenerator::SpawnFloorTiles()
 
 					if (NX < 0 || NX >= GridWidth || NY < 0 || NY >= GridHeight) continue;
 
-					if (Grid[Index(x, y)]) ++FloorNeighbors;
+					if (Grid[Index(NX, NY)]) ++FloorNeighbors;
 				}
 
 				//Only spawn pillars when it's a hole surrounded by floor
