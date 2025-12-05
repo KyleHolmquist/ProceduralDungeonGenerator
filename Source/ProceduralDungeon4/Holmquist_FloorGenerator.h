@@ -51,6 +51,22 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Mesh")
 	float FloorZ = 0.f;
 
+	//Height of the walls in world units
+	UPROPERTY(EditAnywhere, Category = "Mesh")
+	float WallHeight = 300.f;
+	
+	//Tickness of wall segments in world units
+	UPROPERTY(EditAnywhere, Category = "Mesh")
+	float WallThickness = 40.f;
+
+	//Whether to spawn pillars in interior gaps or not
+	UPROPERTY(EditAnywhere, Category = "Mesh")
+	bool bSpawnPillarsInGaps = true;
+
+	//Footprint size for pillars
+	UPROPERTY(EditAnywhere, Category = "Mesh")
+	float PillarSize = 40.f;
+
 	//---- Internal Data ----
 
 	//Logical grid - true = floor, false = empty
