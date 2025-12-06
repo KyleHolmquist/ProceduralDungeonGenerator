@@ -21,6 +21,7 @@ void AHolmquist_FloorGenerator::BeginPlay()
 	//Allocate Grid
 	GenerateRoomLayout();
 	SpawnFloorTiles();
+	CreateDoors(DefaultDoorCount);
 	
 }
 
@@ -204,6 +205,12 @@ void AHolmquist_FloorGenerator::SpawnFloorTiles()
 
 							WallActor->SetActorScale3D(FVector(ScaleX, ScaleY, ScaleZ));
 							WallActor->SetMobility(EComponentMobility::Static);
+
+							FHolmquistWallSegment Seg;
+							Seg.Cell = FIntPoint(x, y);
+							Seg.Direction = 0;
+							Seg.WallActor = WallActor;
+							WallSegments.Add(Seg);
 						}
 					}
 				}
@@ -234,6 +241,12 @@ void AHolmquist_FloorGenerator::SpawnFloorTiles()
 
 								WallActor->SetActorScale3D(FVector(ScaleX, ScaleY, ScaleZ));
 								WallActor->SetMobility(EComponentMobility::Static);
+
+							FHolmquistWallSegment Seg;
+							Seg.Cell = FIntPoint(x, y);
+							Seg.Direction = 1;
+							Seg.WallActor = WallActor;
+							WallSegments.Add(Seg);
 							}
 						}
 					}
@@ -265,6 +278,12 @@ void AHolmquist_FloorGenerator::SpawnFloorTiles()
 
 								WallActor->SetActorScale3D(FVector(ScaleX, ScaleY, ScaleZ));
 								WallActor->SetMobility(EComponentMobility::Static);
+
+							FHolmquistWallSegment Seg;
+							Seg.Cell = FIntPoint(x, y);
+							Seg.Direction = 2;
+							Seg.WallActor = WallActor;
+							WallSegments.Add(Seg);
 							}
 						}
 					}
@@ -296,6 +315,12 @@ void AHolmquist_FloorGenerator::SpawnFloorTiles()
 
 								WallActor->SetActorScale3D(FVector(ScaleX, ScaleY, ScaleZ));
 								WallActor->SetMobility(EComponentMobility::Static);
+
+							FHolmquistWallSegment Seg;
+							Seg.Cell = FIntPoint(x, y);
+							Seg.Direction = 3;
+							Seg.WallActor = WallActor;
+							WallSegments.Add(Seg);
 							}
 						}
 					}
@@ -356,3 +381,71 @@ void AHolmquist_FloorGenerator::SpawnFloorTiles()
 	}
 }
 
+void AHolmquist_FloorGenerator::CreateDoors(int32 DoorCount)
+{
+	if (DoorCount <= 0) return;
+
+	if (WallSegments.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Holmquist_FloorGenerator: No wall segments to carve doors from!"));
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	//Clamp to existing walls
+	DoorCount = FMath::Min(DoorCount, WallSegments.Num());
+
+	//Reuse Seed so doors are deterministic relative to layout, but offset so it doesn't affect shape generation
+	FRandomStream Rng;
+	if (Seed >= 0)
+	{
+		Rng.Initialize(Seed + 1337);
+	}
+	else
+	{
+		Rng.GenerateNewSeed();
+	}
+
+	for (int32 d = 0; d < DoorCount && WallSegments.Num() > 0; ++d)
+	{
+		const int32 Index = Rng.RandRange(0, WallSegments.Num() - 1);
+		FHolmquistWallSegment Seg = WallSegments[Index];
+
+		AStaticMeshActor* WallActor = Seg.WallActor.Get();
+		if (!WallActor)
+		{
+			//Dead pointer, discard and retry
+			WallSegments.RemoveAtSwap(Index);
+			--d;
+			continue;
+		}
+
+		const FTransform WallTransform = WallActor->GetActorTransform();
+
+		//Remove the wall section
+		WallActor->Destroy();
+		WallSegments.RemoveAtSwap(Index);
+
+		//Spawn a door mesh
+		if (DoorMesh)
+		{
+			AStaticMeshActor* DoorActor = World->SpawnActor<AStaticMeshActor>(WallTransform.GetLocation(), WallTransform.GetRotation().Rotator());
+
+			if (DoorActor)
+			{
+				if (UStaticMeshComponent* DoorComp = DoorActor->GetStaticMeshComponent())
+				{
+					DoorComp->SetStaticMesh(DoorMesh);
+					DoorActor->SetActorScale3D(WallTransform.GetScale3D());
+					DoorActor->SetMobility(EComponentMobility::Static);
+				}
+				else
+				{
+					DoorActor->Destroy();
+				}
+			}
+		}
+	}
+}
